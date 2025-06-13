@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html th:replace="~{layout :: layout(title='My Bookings')}">
+<body>
+    <div th:fragment="content">
+        <h1 class="text-center mb-4">My Bookings</h1>
+        <div class="row row-cols-1 row-cols-md-2 g-4">
+            <div class="col" th:each="booking : ${bookings}">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">Booking #<span th:text="${booking.id}">0</span></h5>
+                        <p class="card-text">Room: <span th:text="${booking.room.number}">Room</span></p>
+                        <p class="card-text">Guest: <span th:text="${booking.guestName}">Guest</span></p>
+                        <p class="card-text">From: <span th:text="${booking.fromDate}">Date</span></p>
+                        <p class="card-text">To: <span th:text="${booking.toDate}">Date</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(title='Rooms')}">
+<body>
+<div th:fragment="content">
+    <h1 class="text-center mb-4">Rooms in <span th:text="${hotelName}">Hotel</span></h1>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        <div class="col" th:each="room : ${rooms}">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title" th:text="${room.number}">Room Number</h5>
+                    <p class="card-text" th:text="${room.type}">Room Type</p>
+                    <p class="card-text">Price: $<span th:text="${room.pricePerNight}">0</span>/night</p>
+                    <button class="btn btn-primary" data-bs-toggle="modal" th:attr="data-room-id=${room.id}" th:onclick="'openBookingModal(' + ${room.id} + ')'">Book Now</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bookingModalLabel">Book Room</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bookingForm" th:action="@{/bookings}" method="post">
+                        <input type="hidden" name="roomId" id="roomId">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" th:value="${#authentication.getPrincipal() != 'anonymousUser' ? #authentication.getName() : ''}" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fromDate" class="form-label">Check-in Date</label>
+                            <input type="date" class="form-control" id="fromDate" name="fromDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="toDate" class="form-label">Check-out Date</label>
+                            <input type="date" class="form-control" id="toDate" name="toDate" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Submit Booking</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function openBookingModal(roomId) {
+        document.getElementById('roomId').value = roomId;
+        new bootstrap.Modal(document.getElementById('bookingModal')).show();
+    }
+</script>
+</body>
+</html>

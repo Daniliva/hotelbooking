@@ -1,0 +1,15 @@
+
+a
+java:S2184"FCast one of the operands of this multiplication operation to a "long".(’åÁñÿÿÿÿÿ
+o	java:S116"URename this field "SECRET_KEY" to match the regular expression '^[a-z][a-zA-Z0-9]*$'.(îÅçïýÿÿÿÿ
+s	java:S116"YRename this field "JWT_EXPIRATION" to match the regular expression '^[a-z][a-zA-Z0-9]*$'.(’åÁñÿÿÿÿÿ
+<
+java:S1170"!Make this final field static too.(îÅçïýÿÿÿÿ
+<
+java:S1170"!Make this final field static too.(’åÁñÿÿÿÿÿ
+L
+java:S6437"6Revoke and change this password, as it is compromised.(›ÈÚ
+L
+java:S6437"6Revoke and change this password, as it is compromised.(ÑƒÅÙ
+L
+java:S6437'"6Revoke and change this password, as it is compromised.(ÑƒÅÙ
