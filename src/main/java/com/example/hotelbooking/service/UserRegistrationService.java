@@ -28,9 +28,6 @@ public class UserRegistrationService {
         if (!password.matches("^(?=.*[a-zA-Z])(?=.*\\d).+$")) {
             throw new IllegalArgumentException("Password must contain letters and numbers");
         }
-        if (userRepository.findByUsername(username).isPresent()) {
-            throw new IllegalArgumentException("Username already exists");
-        }
 
         User user = new User();
         user.setUsername(username);

@@ -1,56 +1,66 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(title='Rooms')}">
-<body>
-<div th:fragment="content">
-    <h1 class="text-center mb-4">Rooms in <span th:text="${hotelName}">Hotel</span></h1>
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        <div class="col" th:each="room : ${rooms}">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title" th:text="${room.number}">Room Number</h5>
-                    <p class="card-text" th:text="${room.type}">Room Type</p>
-                    <p class="card-text">Price: $<span th:text="${room.pricePerNight}">0</span>/night</p>
-                    <button class="btn btn-primary" data-bs-toggle="modal" th:attr="data-room-id=${room.id}" th:onclick="'openBookingModal(' + ${room.id} + ')'">Book Now</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
 
-    <!-- Booking Modal -->
-    <div class="modal fade" id="bookingModal" tabindex="-1" aria-labelledby="bookingModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="bookingModalLabel">Book Room</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="bookingForm" th:action="@{/bookings}" method="post">
-                        <input type="hidden" name="roomId" id="roomId">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" name="username" th:value="${#authentication.getPrincipal() != 'anonymousUser' ? #authentication.getName() : ''}" readonly>
-                        </div>
-                        <div class="mb-3">
-                            <label for="fromDate" class="form-label">Check-in Date</label>
-                            <input type="date" class="form-control" id="fromDate" name="fromDate" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="toDate" class="form-label">Check-out Date</label>
-                            <input type="date" class="form-control" id="toDate" name="toDate" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Submit Booking</button>
-                    </form>
-                </div>
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rooms - Hotel Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hover-scale { transition: transform 0.3s ease; }
+        .hover-scale:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body th:replace="~{layout :: layout(~{::main})}">
+    <main>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6" th:text="'Rooms in ' + ${hotelName}">Rooms in Hotel</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div th:each="room : ${rooms}" class="bg-white rounded-lg shadow-md p-6 hover-scale">
+                <h2 class="text-xl font-semibold text-gray-800" th:text="'Room ' + ${room.roomNumber}">Room Number</h2>
+                <p class="text-gray-600" th:text="'Type: ' + ${room.type}">Type</p>
+                <p class="text-gray-600" th:text="'Price: $' + ${room.price}">Price</p>
+                <button class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition" onclick="alert('Booking functionality to be implemented')">Book Now</button>
             </div>
         </div>
-    </div>
-</div>
-<script>
-    function openBookingModal(roomId) {
-        document.getElementById('roomId').value = roomId;
-        new bootstrap.Modal(document.getElementById('bookingModal')).show();
-    }
-</script>
+        <a th:href="@{/ui/hotels}" class="mt-6 inline-block text-blue-600 hover:underline">Back to Hotels</a>
+    </main>
 </body>
 </html>

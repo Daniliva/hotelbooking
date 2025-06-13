@@ -1,20 +1,65 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(title='Hotels')}">
-<body>
-<div th:fragment="content">
-    <h1 class="text-center mb-4">Available Hotels</h1>
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        <div class="col" th:each="hotel : ${hotels}">
-            <div class="card h-100 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title" th:text="${hotel.name}">Hotel Name</h5>
-                    <p class="card-text" th:text="${hotel.location}">Location</p>
-                    <p class="card-text">Rating: <span th:text="${hotel.rating}">0</span>/5</p>
-                    <a th:href="@{/ui/rooms/by-hotel/{id}(id=${hotel.id})}" class="btn btn-primary">View Rooms</a>
-                </div>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hotels - Hotel Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .hover-scale { transition: transform 0.3s ease; }
+        .hover-scale:hover { transform: scale(1.05); }
+    </style>
+</head>
+<body th:replace="~{layout :: layout(~{::main})}">
+    <main>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Available Hotels</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div th:each="hotel : ${hotels}" class="bg-white rounded-lg shadow-md p-6 hover-scale">
+                <h2 class="text-xl font-semibold text-gray-800" th:text="${hotel.name}">Hotel Name</h2>
+                <p class="text-gray-600" th:text="${hotel.location}">Location</p>
+                <p class="text-gray-600" th:text="'Rating: ' + ${hotel.rating} + '/5'">Rating: 0/5</p>
+                <a th:href="@{/ui/rooms/by-hotel/{id}(id=${hotel.id})}" class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition">View Rooms</a>
             </div>
         </div>
-    </div>
-</div>
+    </main>
 </body>
 </html>

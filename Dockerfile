@@ -1,26 +1,44 @@
-# Використання офіційного образу Maven для білду
-FROM maven:3.9.6-eclipse-temurin-17 AS build
+# Build stage
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 
-# Встановлюємо робочу директорію всередині контейнера
+# Set working directory
 WORKDIR /app
 
-# Копіюємо весь код у контейнер
-COPY . .
+# Copy only pom.xml first to cache dependencies
+COPY pom.xml .
 
-# Виконуємо білд Spring Boot-додатку
+# Download dependencies (cached unless pom.xml changes)
+RUN mvn dependency:go-offline -B
+
+# Copy the rest of the source code
+COPY src ./src
+
+# Build the application, skipping tests
 RUN mvn clean package -DskipTests
 
-# Використання легкого OpenJDK для фінального контейнера
-FROM eclipse-temurin:17-jdk-jammy
+# Runtime stage
+FROM eclipse-temurin:21-jre-slim
 
-# Встановлюємо робочу директорію
+# Set working directory
 WORKDIR /app
 
-# Копіюємо JAR-файл із попереднього контейнера
+# Copy the built JAR from the build stage
 COPY --from=build /app/target/*.jar app.jar
 
-# Відкриваємо порт (Render автоматично визначає його)
+# Create a non-root user for security
+RUN useradd -m appuser && chown -R appuser /app
+USER appuser
+
+# Expose port 8080 (for Render compatibility)
 EXPOSE 8080
 
-# Запускаємо Spring Boot-додаток
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Add health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Set default environment variables (configurable at runtime)
+ENV SPRING_PROFILES_ACTIVE=prod \
+    JAVA_OPTS="-Xms512m -Xmx1024m"
+
+# Run the application
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

@@ -1,11 +1,11 @@
 <script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+        return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
         if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
             try {
                 var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
@@ -19,11 +19,11 @@
 
                 // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
                 var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
                 );
                 // Fallback
                 if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
+                    headerRowIndex = 0;
                 }
 
                 // Convert filtered JSON back to CSV
@@ -36,408 +36,26 @@
             }
         }
         return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
-<html lang="en">
+    }
+</script><!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Booking</title>
-    <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.4.0/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/react-hook-form@7.43.9/dist/index.umd.min.js"></script>
+    <title>Welcome - Hotel Booking</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.20.6/babel.min.js"></script>
+    <style>
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
 </head>
-<body>
-    <div id="root"></div>
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const { useForm } = ReactHookForm;
-        const { createRoot } = ReactDOM;
-
-        // Контекст для авторизації
-        const AuthContext = React.createContext();
-
-        const App = () => {
-            const [user, setUser] = useState(null);
-
-            useEffect(() => {
-                const token = localStorage.getItem('token');
-                if (token) {
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                    setUser({ token });
-                }
-            }, []);
-
-            const login = (token) => {
-                localStorage.setItem('token', token);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                setUser({ token });
-            };
-
-            const logout = () => {
-                localStorage.removeItem('token');
-                delete axios.defaults.headers.common['Authorization'];
-                setUser(null);
-                navigate('/login');
-            };
-
-            const navigate = (url) => {
-                window.history.pushState({}, '', url);
-                setPath(url);
-            };
-
-            const [path, setPath] = useState(window.location.pathname);
-
-            useEffect(() => {
-                const handlePopstate = () => setPath(window.location.pathname);
-                window.addEventListener('popstate', handlePopstate);
-                return () => window.removeEventListener('popstate', handlePopstate);
-            }, []);
-
-            return (
-                <AuthContext.Provider value={{ user, login, logout }}>
-                    <div className="min-h-screen bg-gray-100">
-                        <nav className="bg-blue-600 text-white p-4">
-                            <div className="container mx-auto flex justify-between items-center">
-                                <h1 className="text-xl font-bold">Hotel Booking</h1>
-                                <div className="space-x-4">
-                                    <a href="/hotels" onClick={(e) => { e.preventDefault(); navigate('/hotels'); }} className="hover:underline">Hotels</a>
-                                    {user ? (
-                                        <>
-                                            <a href="/bookings" onClick={(e) => { e.preventDefault(); navigate('/bookings'); }} className="hover:underline">My Bookings</a>
-                                            <button onClick={logout} className="hover:underline">Logout</button>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <a href="/login" onClick={(e) => { e.preventDefault(); navigate('/login'); }} className="hover:underline">Login</a>
-                                            <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register'); }} className="hover:underline">Register</a>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </nav>
-                        <Router path={path} navigate={navigate} />
-                        <footer className="bg-gray-800 text-white text-center p-4 mt-8">
-                            <p>© 2025 Hotel Booking. All rights reserved.</p>
-                        </footer>
-                    </div>
-                </AuthContext.Provider>
-            );
-        };
-
-        // Компонент маршрутизації
-        const Router = ({ path, navigate }) => {
-            const routes = {
-                '/': <Hotels navigate={navigate} />,
-                '/login': <Login navigate={navigate} />,
-                '/register': <Register navigate={navigate} />,
-                '/hotels': <Hotels navigate={navigate} />,
-                '/rooms/:hotelId': <Rooms navigate={navigate} />,
-                '/bookings': <Bookings navigate={navigate} />,
-            };
-
-            const pathTemplate = path.match(/^\/rooms\/(\d+)$/) ? '/rooms/:hotelId' : path;
-            return routes[pathTemplate] || <div className="container mx-auto p-4">404 Not Found</div>;
-        };
-
-        // Компонент авторизації
-        const Login = ({ navigate }) => {
-            const { register, handleSubmit, formState: { errors } } = useForm();
-            const { login } = React.useContext(AuthContext);
-
-            const onSubmit = async (data) => {
-                try {
-                    const response = await axios.post('/api/auth/login', {
-                        username: data.username,
-                        password: data.password,
-                    });
-                    login(response.data.token);
-                    navigate('/hotels');
-                } catch (error) {
-                    alert('Login failed: ' + (error.response?.data || error.message));
-                }
-            };
-
-            return (
-                <div className="flex items-center justify-center min-h-screen">
-                    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-                        <h2 className="text-2xl font-bold mb-6 text-center">Login</h2>
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium">Username</label>
-                                <input
-                                    {...register('username', {
-                                        required: 'Username is required',
-                                        minLength: { value: 3, message: 'Minimum 3 characters' },
-                                    })}
-                                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                {errors.username && <p className="text-red-500 text-sm">{errors.username.message}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium">Password</label>
-                                <input
-                                    type="password"
-                                    {...register('password', {
-                                        required: 'Password is required',
-                                        minLength: { value: 8, message: 'Minimum 8 characters' },
-                                        pattern: {
-                                            value: /^(?=.*[a-zA-Z])(?=.*\d).+$/,
-                                            message: 'Password must contain letters and numbers',
-                                        },
-                                    })}
-                                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
-                            </div>
-                            <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600">
-                                Login
-                            </button>
-                        </form>
-                        <p className="mt-4 text-center">
-                            No account? <a href="/register" onClick={(e) => { e.preventDefault(); navigate('/register'); }} className="text-blue-500 hover:underline">Register</a>
-                        </p>
-                    </div>
-                </div>
-            );
-        };
-
-        // Компонент реєстрації
-        const Register = ({ navigate }) => {
-            const { register, handleSubmit, formState: { errors } } = useForm();
-            const { login } = React.useContext(AuthContext);
-
-            const onSubmit = async (data) => {
-                try {
-                    const response = await axios.post('/api/auth/register', {
-                        username: data.username,
-                        password: data.password,
-                    });
-                    login(response.data.token);
-                    navigate('/hotels');
-                } catch (error) {
-                    alert('Registration failed: ' + (error.response?.data || error.message));
-                }
-            };
-
-            return (
-                <div className="flex items-center justify-center min-h-screen">
-                    <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-                        <h2 className="text-2xl font-bold mb-6 text-center">Register</h2>
-                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium">Username</label>
-                                <input
-                                    {...register('username', {
-                                        required: 'Username is required',
-                                        minLength: { value: 3, message: 'Minimum 3 characters' },
-                                    })}
-                                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                {errors.username && <p className="text-red-500 text-sm">{errors.username.message}</p>}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium">Password</label>
-                                <input
-                                    type="password"
-                                    {...register('password', {
-                                        required: 'Password is required',
-                                        minLength: { value: 8, message: 'Minimum 8 characters' },
-                                        pattern: {
-                                            value: /^(?=.*[a-zA-Z])(?=.*\d).+$/,
-                                            message: 'Password must contain letters and numbers',
-                                        },
-                                    })}
-                                    className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                                {errors.password && <p className="text-red-500 text-sm">{errors.password.message}</p>}
-                            </div>
-                            <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600">
-                                Register
-                            </button>
-                        </form>
-                        <p className="mt-4 text-center">
-                            Already have an account? <a href="/login" onClick={(e) => { e.preventDefault(); navigate('/login'); }} className="text-blue-500 hover:underline">Login</a>
-                        </p>
-                    </div>
-                </div>
-            );
-        };
-
-        // Компонент списку готелів
-        const Hotels = ({ navigate }) => {
-            const [hotels, setHotels] = useState([]);
-            const { user } = React.useContext(AuthContext);
-
-            useEffect(() => {
-                axios.get('/hotels')
-                    .then(response => setHotels(response.data))
-                    .catch(error => console.error('Error fetching hotels:', error));
-            }, []);
-
-            if (!user) {
-                navigate('/login');
-                return null;
-            }
-
-            return (
-                <div className="container mx-auto p-4">
-                    <h2 className="text-2xl font-bold mb-4">Available Hotels</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {hotels.map(hotel => (
-                            <div key={hotel.id} className="bg-white p-4 rounded-lg shadow-md">
-                                <h3 className="text-xl font-semibold">{hotel.name}</h3>
-                                <p className="text-gray-600">{hotel.location}</p>
-                                <p className="text-yellow-500">Rating: {hotel.rating}/5</p>
-                                <a
-                                    href={`/rooms/${hotel.id}`}
-                                    onClick={(e) => { e.preventDefault(); navigate(`/rooms/${hotel.id}`); }}
-                                    className="mt-2 inline-block bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-                                >
-                                    View Rooms
-                                </a>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        // Компонент списку номерів
-        const Rooms = ({ navigate }) => {
-            const [rooms, setRooms] = useState([]);
-            const [hotelName, setHotelName] = useState('');
-            const hotelId = window.location.pathname.split('/')[2];
-            const { user } = React.useContext(AuthContext);
-
-            useEffect(() => {
-                axios.get(`/rooms/by-hotel/${hotelId}`)
-                    .then(response => setRooms(response.data))
-                    .catch(error => console.error('Error fetching rooms:', error));
-                axios.get(`/hotels/${hotelId}`)
-                    .then(response => setHotelName(response.data.name))
-                    .catch(error => setHotelName('Unknown Hotel'));
-            }, [hotelId]);
-
-            if (!user) {
-                navigate('/login');
-                return null;
-            }
-
-            return (
-                <div className="container mx-auto p-4">
-                    <h2 className="text-2xl font-bold mb-4">Rooms in {hotelName}</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {rooms.map(room => (
-                            <div key={room.id} className="bg-white p-4 rounded-lg shadow-md">
-                                <h3 className="text-xl font-semibold">Room {room.number}</h3>
-                                <p className="text-gray-600">{room.type}</p>
-                                <p className="text-green-600">Price: ${room.pricePerNight}/night</p>
-                                <a
-                                    href={`/bookings?roomId=${room.id}`}
-                                    onClick={(e) => { e.preventDefault(); navigate(`/bookings?roomId=${room.id}`); }}
-                                    className="mt-2 inline-block bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-                                >
-                                    Book Now
-                                </a>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            );
-        };
-
-        // Компонент бронювань
-        const Bookings = ({ navigate }) => {
-            const [bookings, setBookings] = useState([]);
-            const { register, handleSubmit, formState: { errors } } = useForm();
-            const { user } = React.useContext(AuthContext);
-
-            useEffect(() => {
-                if (user) {
-                    axios.get('/bookings/by-guest')
-                        .then(response => setBookings(response.data))
-                        .catch(error => console.error('Error fetching bookings:', error));
-                }
-            }, [user]);
-
-            if (!user) {
-                navigate('/login');
-                return null;
-            }
-
-            const onSubmit = async (data) => {
-                try {
-                    const roomId = new URLSearchParams(window.location.search).get('roomId');
-                    await axios.post('/bookings', {
-                        room: { id: roomId },
-                        username: user.username,
-                        fromDate: data.fromDate,
-                        toDate: data.toDate,
-                    });
-                    alert('Booking successful!');
-                    navigate('/bookings');
-                } catch (error) {
-                    alert('Booking failed: ' + (error.response?.data || error.message));
-                }
-            };
-
-            return (
-                <div className="container mx-auto p-4">
-                    <h2 className="text-2xl font-bold mb-4">My Bookings</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {bookings.map(booking => (
-                            <div key={booking.id} className="bg-white p-4 rounded-lg shadow-md">
-                                <h3 className="text-xl font-semibold">Booking #{booking.id}</h3>
-                                <p className="text-gray-600">Room: {booking.room.number}</p>
-                                <p className="text-gray-600">Guest: {booking.username}</p>
-                                <p className="text-gray-600">From: {booking.fromDate}</p>
-                                <p className="text-gray-600">To: {booking.toDate}</p>
-                            </div>
-                        ))}
-                    </div>
-                    <h3 className="text-xl font-bold mt-6">Book a Room</h3>
-                    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4 max-w-md">
-                        <div>
-                            <label className="block text-sm font-medium">Check-in Date</label>
-                            <input
-                                type="date"
-                                {...register('fromDate', {
-                                    required: 'Check-in date is required',
-                                    validate: value => new Date(value) >= new Date() || 'Check-in date cannot be in the past',
-                                })}
-                                className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            {errors.fromDate && <p className="text-red-500 text-sm">{errors.fromDate.message}</p>}
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium">Check-out Date</label>
-                            <input
-                                type="date"
-                                {...register('toDate', {
-                                    required: 'Check-out date is required',
-                                    validate: {
-                                        afterFromDate: (value, { fromDate }) => new Date(value) > new Date(fromDate) || 'Check-out date must be after check-in date',
-                                    },
-                                })}
-                                className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            {errors.toDate && <p className="text-red-500 text-sm">{errors.toDate.message}</p>}
-                        </div>
-                        <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600">
-                            Submit Booking
-                        </button>
-                    </form>
-                </div>
-            );
-        };
-
-        // Рендеринг додатка
-        const root = createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+<body th:replace="~{layout :: layout(~{::main})}">
+<main class="fade-in">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">Welcome to Hotel Booking</h1>
+        <p class="text-lg text-gray-600 mb-6">Discover and book the best hotels for your next adventure.</p>
+        <a th:href="@{/ui/hotels}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">Explore Hotels</a>
+    </div>
+</main>
 </body>
 </html>

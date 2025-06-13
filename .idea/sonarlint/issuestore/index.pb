@@ -53,3 +53,8 @@ t
 Dsrc/main/java/com/example/hotelbooking/config/HttpToHttpsConfig.java,8\a\8a02b2710043dfaa35cf39f921add411c70f4c83
 j
 :src/main/java/com/example/hotelbooking/config/JwtUtil.java,f\e\fe1b703654070e5c2d2d6a2d44e7a0672c1a633c
+:
+
+Dockerfile,6\6\6651ddff6eb82c840ced7c1dddee15c6e1913dd4
+7
+URL.txt,e\1\e1f7131fce3c707fb05a5d4bb4c88ee8bf143220

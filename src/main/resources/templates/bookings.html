@@ -1,21 +1,66 @@
-<!DOCTYPE html>
-<html th:replace="~{layout :: layout(title='My Bookings')}">
-<body>
-    <div th:fragment="content">
-        <h1 class="text-center mb-4">My Bookings</h1>
-        <div class="row row-cols-1 row-cols-md-2 g-4">
-            <div class="col" th:each="booking : ${bookings}">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">Booking #<span th:text="${booking.id}">0</span></h5>
-                        <p class="card-text">Room: <span th:text="${booking.room.number}">Room</span></p>
-                        <p class="card-text">Guest: <span th:text="${booking.guestName}">Guest</span></p>
-                        <p class="card-text">From: <span th:text="${booking.fromDate}">Date</span></p>
-                        <p class="card-text">To: <span th:text="${booking.toDate}">Date</span></p>
-                    </div>
-                </div>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - Hotel Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body th:replace="~{layout :: layout(~{::main})}">
+    <main>
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">My Bookings</h1>
+        <div th:if="${bookings.isEmpty()}" class="text-gray-600">
+            <p>No bookings found.</p>
+        </div>
+        <div th:unless="${bookings.isEmpty()}" class="space-y-6">
+            <div th:each="booking : ${bookings}" class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800" th:text="'Booking ID: ' + ${booking.id}">Booking ID</h2>
+                <p class="text-gray-600" th:text="'Hotel: ' + ${booking.hotelName}">Hotel Name</p>
+                <p class="text-gray-600" th:text="'Room: ' + ${booking.roomNumber}">Room Number</p>
+                <p class="text-gray-600" th:text="'Check-in: ' + ${booking.checkInDate}">Check-in Date</p>
+                <p class="text-gray-600" th:text="'Check-out: ' + ${booking.checkOutDate}">Check-out Date</p>
             </div>
         </div>
-    </div>
+        <a th:href="@{/ui/hotels}" class="mt-6 inline-block text-blue-600 hover:underline">Back to Hotels</a>
+    </main>
 </body>
 </html>
